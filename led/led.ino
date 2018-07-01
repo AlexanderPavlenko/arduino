@@ -5,48 +5,60 @@
 #define COLOR_ORDER GRB
 #define NUM_LEDS    300
 #define BRIGHTNESS  255
-#define UPDATES_PER_SECOND 18.8
-#define SEAMLESS 10
 
 CRGB leds[NUM_LEDS];
-CRGBPalette16 currentPalette;
-TBlendType    currentBlending;
+CRGBPalette16 palette;
+TBlendType    blending;
 
 void setup() {
   delay(500); // "power-up safety"
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
-  // currentPalette = RainbowColors_p;
-  currentPalette = PartyColors_p;
-  currentBlending = LINEARBLEND;
+  // palette = RainbowColors_p;
+  palette = PartyColors_p;
+  blending = LINEARBLEND;
 }
-
 
 void loop() {
   morph();
+  // stream();
   // all_at_once();
 }
 
+#define MORPH_SEAMLESS 10
+#define MORPH_DELAY 55
 void morph() {
   static uint8_t colorIndex = 0;
-  static uint8_t brightness = 255;
 
-  for(int mod = 0; mod < SEAMLESS; mod++) {
+  for(int mod = 0; mod < MORPH_SEAMLESS; mod++) {
     for(int i = 0; i < NUM_LEDS; i++) {
-      if(i % SEAMLESS == mod) {
-        leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
+      if(i % MORPH_SEAMLESS == mod) {
+        leds[i] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, blending);
       }
     }
     FastLED.show();
-    delay(1000 / UPDATES_PER_SECOND);
+    delay(MORPH_DELAY);
   }
 
-  colorIndex = colorIndex + 1;
+  colorIndex++;
+}
+
+#define STREAM_DELAY 25
+void stream(){
+  static uint8_t offset = 0;
+
+  for(int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = ColorFromPalette(palette, i - offset, BRIGHTNESS, blending);
+  }
+  FastLED.show();
+  delay(STREAM_DELAY);
+
+  offset++;
 }
 
 void all_at_once() {
   for(int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = ColorFromPalette(currentPalette, i, 255, currentBlending);
+    leds[i] = ColorFromPalette(palette, i, BRIGHTNESS, blending);
   }
   FastLED.show();
   exit(0);
