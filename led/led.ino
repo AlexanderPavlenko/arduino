@@ -5,7 +5,7 @@
 #define LED_PIN     8
 #define LED_COUNT   300
 #define COLOR_ORDER GRB
-#define BRIGHTNESS  255
+#define BRIGHTNESS  255 // 100, 255
 
 CRGB leds[LED_COUNT];
 CRGBPalette16 palette;
@@ -23,7 +23,9 @@ void loop() {
 //  FastLED, pick one:
 //  morph();
   stream();
+//  strobe();
 //  all_at_once();
+//  heavy_light_of_kurtain();
   
 //  or WS2812FX:
 //  ws2812fx.service();
@@ -72,6 +74,28 @@ void morph() {
   colorIndex++;
 }
 
+#define STROBE_DELAY_ON 50
+#define STROBE_DELAY_OFF 100
+void strobe() {
+  static uint8_t colorIndex = 0;
+
+  set_each_led(ColorFromPalette(palette, colorIndex, BRIGHTNESS, blending));
+  //set_each_led(CRGB::White);
+  FastLED.show();
+  delay(STROBE_DELAY_ON);
+  set_each_led(CRGB::Black);
+  FastLED.show();
+  delay(STROBE_DELAY_OFF);
+
+  colorIndex++;
+}
+
+void set_each_led(CRGB value) {
+  for(int i = 0; i < LED_COUNT; i++) {
+    leds[i] = value;
+  }
+}
+
 #define STREAM_DELAY 25
 void stream(){
   static uint8_t offset = 0;
@@ -88,6 +112,14 @@ void stream(){
 void all_at_once() {
   for(int i = 0; i < LED_COUNT; i++) {
     leds[i] = ColorFromPalette(palette, i, BRIGHTNESS, blending);
+  }
+  FastLED.show();
+  exit(0);
+}
+
+void heavy_light_of_kurtain() {
+  for(int i = 0; i < LED_COUNT; i++) {
+    leds[i] = CRGB::Blue;
   }
   FastLED.show();
   exit(0);
