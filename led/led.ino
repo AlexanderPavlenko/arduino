@@ -15,27 +15,34 @@ WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   delay(500); // "power-up safety"
+
+  Serial.begin(500000);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
   setupFastLED();
-//  setupWS2812FX();
+  //  setupWS2812FX();
 }
 
 void loop() {
-//  FastLED, pick one:
-//  morph();
-  stream();
-//  strobe();
-//  all_at_once();
-//  heavy_light_of_kurtain();
-  
-//  or WS2812FX:
-//  ws2812fx.service();
+  //  FastLED, pick one:
+  //  morph();
+  //  stream();
+  serial();
+  //  strobe();
+  //  all_at_once();
+  //  heavy_light_of_kurtain();
+
+  //  or WS2812FX:
+  //  ws2812fx.service();
 }
 
 void setupFastLED() {
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, LED_COUNT).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
   palette = RainbowColors_p;
-//  palette = PartyColors_p;
+  //  palette = PartyColors_p;
   blending = LINEARBLEND;
 }
 
@@ -43,16 +50,53 @@ void setupWS2812FX() {
   ws2812fx.init();
   ws2812fx.setBrightness(BRIGHTNESS);
 
-//  A)
+  //  A)
   ws2812fx.setMode(FX_MODE_FIREWORKS_RANDOM);
   ws2812fx.setSpeed(50000);
 
-//  B)
-//  ws2812fx.setSegment(0, 0,   99,  FX_MODE_LARSON_SCANNER, RED,   20000, false);
-//  ws2812fx.setSegment(1, 100, 199, FX_MODE_LARSON_SCANNER, GREEN, 10000, false);
-//  ws2812fx.setSegment(2, 200, 299, FX_MODE_LARSON_SCANNER, BLUE,  5000, false);
-  
+  //  B)
+  //  ws2812fx.setSegment(0, 0,   99,  FX_MODE_LARSON_SCANNER, RED,   20000, false);
+  //  ws2812fx.setSegment(1, 100, 199, FX_MODE_LARSON_SCANNER, GREEN, 10000, false);
+  //  ws2812fx.setSegment(2, 200, 299, FX_MODE_LARSON_SCANNER, BLUE,  5000, false);
+
   ws2812fx.start();
+}
+
+
+const byte serialSize = 2;
+byte serialInput[serialSize];
+void serialRead() {
+  const char startMarker = 255;
+  static boolean recvInProgress = false;
+  static byte ndx = 0;
+  static char rc;
+
+  while (true) {
+    if (Serial.available() < 1) {
+      continue;
+    }
+    rc = Serial.read();
+    if (recvInProgress == true) {
+      serialInput[ndx] = rc;
+      ndx++;
+      if (rc == startMarker) { // kinda paranoid protocol validation
+        recvInProgress = false;
+        ndx = 0;
+      }
+      if (ndx >= serialSize) {
+        return;
+      }
+    } else if (rc == startMarker) {
+      recvInProgress = true;
+    }
+  }
+}
+
+void serial() {
+  serialRead();
+  set_each_led(ColorFromPalette(palette, serialInput[0], serialInput[1], blending));
+  FastLED.show();
+  delay(5); // LED flickers black without this
 }
 
 
@@ -61,9 +105,9 @@ void setupWS2812FX() {
 void morph() {
   static uint8_t colorIndex = 0;
 
-  for(int mod = 0; mod < MORPH_SEAMLESS; mod++) {
-    for(int i = 0; i < LED_COUNT; i++) {
-      if(i % MORPH_SEAMLESS == mod) {
+  for (int mod = 0; mod < MORPH_SEAMLESS; mod++) {
+    for (int i = 0; i < LED_COUNT; i++) {
+      if (i % MORPH_SEAMLESS == mod) {
         leds[i] = ColorFromPalette(palette, colorIndex, BRIGHTNESS, blending);
       }
     }
@@ -91,16 +135,16 @@ void strobe() {
 }
 
 void set_each_led(CRGB value) {
-  for(int i = 0; i < LED_COUNT; i++) {
+  for (int i = 0; i < LED_COUNT; i++) {
     leds[i] = value;
   }
 }
 
 #define STREAM_DELAY 25
-void stream(){
+void stream() {
   static uint8_t offset = 0;
 
-  for(int i = 0; i < LED_COUNT; i++) {
+  for (int i = 0; i < LED_COUNT; i++) {
     leds[i] = ColorFromPalette(palette, i - offset, BRIGHTNESS, blending);
   }
   FastLED.show();
@@ -110,7 +154,7 @@ void stream(){
 }
 
 void all_at_once() {
-  for(int i = 0; i < LED_COUNT; i++) {
+  for (int i = 0; i < LED_COUNT; i++) {
     leds[i] = ColorFromPalette(palette, i, BRIGHTNESS, blending);
   }
   FastLED.show();
@@ -118,7 +162,7 @@ void all_at_once() {
 }
 
 void heavy_light_of_kurtain() {
-  for(int i = 0; i < LED_COUNT; i++) {
+  for (int i = 0; i < LED_COUNT; i++) {
     leds[i] = CRGB::Blue;
   }
   FastLED.show();
